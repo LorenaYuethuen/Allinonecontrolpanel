@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Sparkles, Plus, Check, Target } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, Plus, Check, Target, Trash2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { useTheme } from '../lib/theme-context';
+import { storage } from '../lib/storage';
 
 export const ManifestationEngine: React.FC = () => {
   const { theme } = useTheme();
@@ -26,6 +27,25 @@ export const ManifestationEngine: React.FC = () => {
     { date: '2 days ago', event: 'Received unexpected income opportunity via DM', signal: 'High' },
   ]);
 
+  // Load from localStorage
+  useEffect(() => {
+    const saved = storage.getManifestationData();
+    if (saved) {
+      if (saved.manifestations) setManifestations(saved.manifestations);
+      if (saved.todayActions) setTodayActions(saved.todayActions);
+      if (saved.akashicEvents) setAkashicEvents(saved.akashicEvents);
+    }
+  }, []);
+
+  // Save to localStorage
+  useEffect(() => {
+    storage.setManifestationData({
+      manifestations,
+      todayActions,
+      akashicEvents
+    });
+  }, [manifestations, todayActions, akashicEvents]);
+
   // Theme-specific colors
   const themeColors = {
     cosmic: { primary: '#D96AFF', secondary: '#B24BF3' },
@@ -46,6 +66,10 @@ export const ManifestationEngine: React.FC = () => {
     }
   };
 
+  const handleDeleteIntention = (id: number) => {
+    setManifestations(manifestations.filter(m => m.id !== id));
+  };
+
   const handleAddSynchronicity = () => {
     if (synchronicity.event.trim()) {
       const now = new Date();
@@ -56,6 +80,10 @@ export const ManifestationEngine: React.FC = () => {
       ]);
       setSynchronicity({ event: '', signal: 'medium' });
     }
+  };
+
+  const handleDeleteSynchronicity = (index: number) => {
+    setAkashicEvents(akashicEvents.filter((_, i) => i !== index));
   };
 
   return (
@@ -112,13 +140,21 @@ export const ManifestationEngine: React.FC = () => {
                   >
                     <div className="flex items-start justify-between mb-4">
                       <p className="text-lg flex-1 leading-relaxed" style={{ fontWeight: 400 }}>{manifest.text}</p>
-                      <span className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap ml-4 ${
-                        manifest.status === 'active' 
-                          ? 'badge-premium' 
-                          : 'badge-secondary'
-                      }`}>
-                        {manifest.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-3 py-1.5 rounded-full text-xs whitespace-nowrap ${
+                          manifest.status === 'active' 
+                            ? 'badge-premium' 
+                            : 'badge-secondary'
+                        }`}>
+                          {manifest.status}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteIntention(manifest.id)}
+                          className="opacity-0 group-hover:opacity-100 p-2 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm opacity-50 group-hover:opacity-70 transition-opacity">
                       <Sparkles className="w-4 h-4" />
@@ -285,17 +321,25 @@ export const ManifestationEngine: React.FC = () => {
                 {akashicEvents.map((event, idx) => (
                   <div
                     key={idx}
-                    className="p-5 rounded-xl bg-gradient-to-br from-white/5 to-transparent border border-white/10"
+                    className="p-5 rounded-xl bg-gradient-to-br from-white/5 to-transparent border border-white/10 group hover:border-white/20 transition-all"
                   >
                     <div className="flex items-start justify-between mb-2">
                       <span className="text-sm opacity-60">{event.date}</span>
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        event.signal === 'High' 
-                          ? 'bg-[#00C7FF]/20 text-[#00C7FF]' 
-                          : 'bg-[#BFA36F]/20 text-[#BFA36F]'
-                      }`}>
-                        {event.signal} Signal
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          event.signal === 'High' 
+                            ? 'bg-[#00C7FF]/20 text-[#00C7FF]' 
+                            : 'bg-[#BFA36F]/20 text-[#BFA36F]'
+                        }`}>
+                          {event.signal} Signal
+                        </span>
+                        <button
+                          onClick={() => handleDeleteSynchronicity(idx)}
+                          className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <p className="opacity-90">{event.event}</p>
                   </div>
